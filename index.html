@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🎬 Mini Video Sharing App</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #0f172a, #1e293b);
+      color: #f8fafc;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      color: #38bdf8;
+      text-align: center;
+      font-size: 2.2rem;
+      margin-bottom: 30px;
+    }
+    #uploadSection, #videoList {
+      margin: 20px auto;
+      max-width: 850px;
+      padding: 25px;
+      border-radius: 16px;
+      background: rgba(30, 41, 59, 0.95);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+      transition: transform 0.2s ease-in-out;
+    }
+    #uploadSection:hover, #videoList:hover {
+      transform: translateY(-3px);
+    }
+    h2 {
+      color: #facc15;
+      font-size: 1.4rem;
+      margin-bottom: 15px;
+      border-left: 4px solid #38bdf8;
+      padding-left: 10px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    input[type=file] {
+      background: #0f172a;
+      color: #f8fafc;
+      border: 2px dashed #38bdf8;
+      padding: 10px;
+      width: 100%;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    input[type=file]:hover {
+      background: #1e293b;
+    }
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(90deg, #38bdf8, #0ea5e9);
+      color: #0f172a;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: transform 0.2s, background 0.3s;
+    }
+    button:hover {
+      transform: scale(1.05);
+      background: linear-gradient(90deg, #0ea5e9, #38bdf8);
+    }
+    #videos {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .video-item {
+      background: #0f172a;
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      transition: transform 0.2s, box-shadow 0.3s;
+    }
+    .video-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+    }
+    .video-item p {
+      margin: 0 0 10px;
+      font-size: 0.95rem;
+      font-weight: bold;
+      color: #38bdf8;
+    }
+    video {
+      width: 100%;
+      border-radius: 10px;
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🎬 Mini Video Sharing App</h1>
+
+<div id="uploadSection">
+  <h2>Upload a Video</h2>
+  <form id="uploadForm">
+    <label for="videoFile">Choose a video file:</label>
+    <input type="file" id="videoFile" name="file" accept="video/*" required>
+    <button type="submit">⬆️ Upload Video</button>
+  </form>
+</div>
+
+<div id="videoList">
+  <h2>Available Videos</h2>
+  <div id="videos"></div>
+</div>
+
+<script>
+const API_URL = "http://127.0.0.1:5000"; // Flask backend URL
+
+// Load videos
+async function loadVideos() {
+  try {
+    const res = await fetch(`${API_URL}/videos`);
+    const data = await res.json();
+    const videosDiv = document.getElementById("videos");
+    videosDiv.innerHTML = "";
+
+    if (data.length === 0) {
+      videosDiv.innerHTML = "<p style='color:#94a3b8;'>No videos uploaded yet. Be the first to upload! 🚀</p>";
+      return;
+    }
+
+    data.forEach(v => {
+      const div = document.createElement("div");
+      div.className = "video-item";
+      div.innerHTML = `
+        <p>📂 ${v.filename}</p>
+        <video controls>
+          <source src="${API_URL}/uploads/${v.filename}" type="video/mp4">
+          Your browser does not support video playback.
+        </video>
+      `;
+      videosDiv.appendChild(div);
+    });
+  } catch (err) {
+    console.error("Error loading videos:", err);
+  }
+}
+
+// Handle upload form
+document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fileInput = document.getElementById("videoFile");
+  if (!fileInput.files.length) return alert("Please select a video first!");
+
+  const formData = new FormData();
+  formData.append("file", fileInput.files[0]);
+
+  try {
+    await fetch(`${API_URL}/upload`, {
+      method: "POST",
+      body: formData
+    });
+    fileInput.value = ""; // reset
+    loadVideos(); // refresh
+  } catch (err) {
+    alert("Upload failed. Please try again.");
+    console.error(err);
+  }
+});
+
+// Initial load
+loadVideos();
+</script>
+
+</body>
+</html>
